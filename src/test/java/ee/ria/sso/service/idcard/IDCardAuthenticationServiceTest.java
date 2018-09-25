@@ -35,10 +35,6 @@ import java.util.Map;
 )
 public class IDCardAuthenticationServiceTest extends AbstractAuthenticationServiceTest {
 
-    private static final String MOCK_SERIAL_NUMBER = "47101010033";
-    private static final String MOCK_GIVEN_NAME = "MARI-LIIS";
-    private static final String MOCK_SURNAME = "MÄNNIK";
-
     @Autowired
     private IDCardConfigurationProvider configurationProvider;
 
@@ -46,12 +42,16 @@ public class IDCardAuthenticationServiceTest extends AbstractAuthenticationServi
     private IDCardAuthenticationService authenticationService;
 
     @Autowired
-    @Qualifier("idIssuerCertificatesMap")
-    private Map<String, X509Certificate> issuerCertificates;
+    @Qualifier("idCardTrustedCertificatesMap")
+    private Map<String, X509Certificate> trustedCertificates;
 
     @Autowired
-    @Qualifier("mockIDCardUserCertificate")
-    private X509Certificate mockUserCertificate;
+    @Qualifier("mockIDCardUserCertificate2015")
+    private X509Certificate mockUserCertificate2015;
+
+    @Autowired
+    @Qualifier("mockIDCardUserCertificate2018")
+    private X509Certificate mockUserCertificate2018;
 
     @Autowired
     private OCSPValidator ocspValidatorMock;
@@ -120,13 +120,17 @@ public class IDCardAuthenticationServiceTest extends AbstractAuthenticationServi
         expectedEx.expect(TaraAuthenticationException.class);
         expectedEx.expectMessage("OCSP validation failed");
 
-        RequestContext requestContext = this.getMockRequestContextWith(null, mockUserCertificate);
+        RequestContext requestContext = this.getMockRequestContextWith(null, mockUserCertificate2015);
         Exception cause = OCSPValidationException.of(new RuntimeException());
 
-        Mockito.doThrow(cause).when(ocspValidatorMock).validate(mockUserCertificate,
-                issuerCertificates.get("TEST of ESTEID-SK 2011"),
-                configurationProvider.getOcspUrl(),
-                issuerCertificates
+        Mockito.doThrow(cause).when(ocspValidatorMock).validate(mockUserCertificate2015,
+                trustedCertificates.get("TEST of ESTEID-SK 2015"),
+                new OCSPValidator.OCSPConfiguration(
+                        configurationProvider.getOcspUrl(),
+                        trustedCertificates,
+                        configurationProvider.getOcspAcceptedClockSkew(),
+                        configurationProvider.getOcspResponseLifetime()
+                )
         );
 
         try {
@@ -140,25 +144,38 @@ public class IDCardAuthenticationServiceTest extends AbstractAuthenticationServi
     }
 
     @Test
-    public void loginByIDCardSucceeds() {
-        RequestContext requestContext = this.getMockRequestContextWith(null,  mockUserCertificate);
+    public void loginByIDCard2015Succeeds() {
+        RequestContext requestContext = this.getMockRequestContextWith(null, mockUserCertificate2015);
 
         Event event = this.authenticationService.loginByIDCard(requestContext);
         Assert.assertEquals("success", event.getId());
 
         TaraCredential credential = (TaraCredential) requestContext.getFlowExecutionContext().getActiveSession().getScope().get("credential");
-        this.validateUserCredential(credential);
+        this.validateUserCredential(credential, "47101010033", "MARI-LIIS", "MÄNNIK");
 
         this.verifyLogContentsOnSuccessfulAuthentication();
     }
 
-    private void validateUserCredential(TaraCredential credential) {
+    @Test
+    public void loginByIDCard2018Succeeds() {
+        RequestContext requestContext = this.getMockRequestContextWith(null, mockUserCertificate2018);
+
+        Event event = this.authenticationService.loginByIDCard(requestContext);
+        Assert.assertEquals("success", event.getId());
+
+        TaraCredential credential = (TaraCredential) requestContext.getFlowExecutionContext().getActiveSession().getScope().get("credential");
+        this.validateUserCredential(credential, "38001085718", "JAAK-KRISTJAN", "JÕEORG");
+
+        this.verifyLogContentsOnSuccessfulAuthentication();
+    }
+
+    private void validateUserCredential(TaraCredential credential, String serialNumber, String givenName, String surname) {
         Assert.assertNotNull(credential);
 
         Assert.assertEquals(AuthenticationType.IDCard, credential.getType());
-        Assert.assertEquals("EE" + MOCK_SERIAL_NUMBER, credential.getId());
-        Assert.assertEquals(MOCK_GIVEN_NAME, credential.getFirstName());
-        Assert.assertEquals(MOCK_SURNAME, credential.getLastName());
+        Assert.assertEquals("EE" + serialNumber, credential.getId());
+        Assert.assertEquals(givenName, credential.getFirstName());
+        Assert.assertEquals(surname, credential.getLastName());
     }
 
     private void verifyLogContentsOnSuccessfulAuthentication() {

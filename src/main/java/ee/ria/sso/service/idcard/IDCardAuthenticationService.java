@@ -12,6 +12,7 @@ import ee.ria.sso.config.idcard.IDCardConfigurationProvider;
 import ee.ria.sso.statistics.StatisticsHandler;
 import ee.ria.sso.statistics.StatisticsOperation;
 import ee.ria.sso.statistics.StatisticsRecord;
+import ee.ria.sso.utils.EstonianIdCodeUtil;
 import ee.ria.sso.utils.X509Utils;
 import ee.ria.sso.validators.OCSPValidationException;
 import ee.ria.sso.validators.OCSPValidator;
@@ -43,7 +44,7 @@ public class IDCardAuthenticationService extends AbstractService {
 
     private final StatisticsHandler statistics;
     private final IDCardConfigurationProvider configurationProvider;
-    private final Map<String, X509Certificate> issuerCertificates;
+    private final Map<String, X509Certificate> trustedCertificates;
     private final OCSPValidator ocspValidator;
 
     public IDCardAuthenticationService(TaraResourceBundleMessageSource messageSource,
@@ -57,9 +58,9 @@ public class IDCardAuthenticationService extends AbstractService {
         this.ocspValidator = ocspValidator;
 
         if (configurationProvider.isOcspEnabled())
-            this.issuerCertificates = applicationContext.getBean("idIssuerCertificatesMap", Map.class);
+            this.trustedCertificates = applicationContext.getBean("idCardTrustedCertificatesMap", Map.class);
         else
-            this.issuerCertificates = null;
+            this.trustedCertificates = null;
     }
 
     @Audit(
@@ -153,7 +154,12 @@ public class IDCardAuthenticationService extends AbstractService {
         }
 
         try {
-            this.ocspValidator.validate(x509Certificate, issuerCert, configurationProvider.getOcspUrl(), issuerCertificates);
+            this.ocspValidator.validate(x509Certificate, issuerCert, new OCSPValidator.OCSPConfiguration(
+                    configurationProvider.getOcspUrl(),
+                    trustedCertificates,
+                    configurationProvider.getOcspAcceptedClockSkew(),
+                    configurationProvider.getOcspResponseLifetime()
+            ));
         } catch (OCSPValidationException e) {
             String errorMessageKey = "message.idc.error";
             if (e.getCause() != null) errorMessageKey = String.format("message.idc.%s", e.getStatus().name().toLowerCase());
@@ -162,9 +168,9 @@ public class IDCardAuthenticationService extends AbstractService {
     }
 
     private X509Certificate findIssuerCertificate(X509Certificate userCertificate) {
-        String issuerCN = X509Utils.getSubjectCNFromCertificate(userCertificate);
+        String issuerCN = X509Utils.getIssuerCNFromCertificate(userCertificate);
         log.debug("IssuerCN extracted: {}", issuerCN);
-        return issuerCertificates.get(issuerCN);
+        return trustedCertificates.get(issuerCN);
     }
 
     private TaraCredential createUserCredential(X509Certificate userCertificate) {
@@ -174,7 +180,7 @@ public class IDCardAuthenticationService extends AbstractService {
 
         return new TaraCredential(
                 AuthenticationType.IDCard,
-                "EE" + params.get("SERIALNUMBER"),
+                EstonianIdCodeUtil.getEEPrefixedEstonianIdCode(params.get("SERIALNUMBER")),
                 params.get("GIVENNAME"),
                 params.get("SURNAME")
         );
