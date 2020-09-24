@@ -26,21 +26,21 @@ jobs:
       - name: Check TARA-Doku broken links
         env:
           INPUT_URL: https://e-gov.github.io/TARA-Doku
-          INPUT_CMD_PARAMS: --buffer-size=8192 --concurrency=10 --skip-tls-verification --exclude=https://tara-test.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/token --exclude=https://tara-test.ria.ee/oidc/token --exclude=https://e-gov.github.io/TARA-Doku/help@ria.ee
+          INPUT_CMD_PARAMS: --buffer-size=8192 --concurrency=10 --skip-tls-verification --exclude=https://tara-test.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/token --exclude=https://tara-test.ria.ee/oidc/token --exclude=https://e-gov.github.io/TARA-Doku/help@ria.ee --ignore-fragments
         run: |
           wget -qO- https://raw.githubusercontent.com/ruzickap/action-my-broken-link-checker/v1.0.3/entrypoint.sh | bash
   
       - name: Check TARA-Doku MFN broken links
         env:
           INPUT_URL: https://e-gov.github.io/MFN
-          INPUT_CMD_PARAMS: --buffer-size=8192 --concurrency=10 --skip-tls-verification --exclude=https://tara-test.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/token --exclude=https://tara-test.ria.ee/oidc/token --exclude=https://e-gov.github.io/TARA-Doku/help@ria.ee
+          INPUT_CMD_PARAMS: --buffer-size=8192 --concurrency=10 --skip-tls-verification --exclude=https://tara-test.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/token --exclude=https://tara-test.ria.ee/oidc/token --exclude=https://e-gov.github.io/TARA-Doku/help@ria.ee --ignore-fragments
         run: |
           wget -qO- https://raw.githubusercontent.com/ruzickap/action-my-broken-link-checker/v1.0.3/entrypoint.sh | bash
       
       - name: Check TARA-Doku eIDAS-Connector broken links
         env:
           INPUT_URL: https://e-gov.github.io/eIDAS-Connector
-          INPUT_CMD_PARAMS: --buffer-size=8192 --concurrency=10 --skip-tls-verification --exclude=https://tara-test.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/token --exclude=https://tara-test.ria.ee/oidc/token --exclude=https://e-gov.github.io/TARA-Doku/help@ria.ee
+          INPUT_CMD_PARAMS: --buffer-size=8192 --concurrency=10 --skip-tls-verification --exclude=https://tara-test.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/authorize --exclude=https://tara.ria.ee/oidc/token --exclude=https://tara-test.ria.ee/oidc/token --exclude=https://e-gov.github.io/TARA-Doku/help@ria.ee --ignore-fragments
         run: |
           wget -qO- https://raw.githubusercontent.com/ruzickap/action-my-broken-link-checker/v1.0.3/entrypoint.sh | bash
 
